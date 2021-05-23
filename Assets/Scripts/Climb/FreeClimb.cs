@@ -25,8 +25,14 @@ public class FreeClimb : MonoBehaviour
     private Transform helper;
     private float delta;
 
+    public GameObject helperVisualizer;
+
     public float horizontal;
     public float vertical;
+
+    public IKSnapshot baseIkSnapshot;
+
+    public FreeClimbAnimHook a_hook;
 
     private void Start() {
         Init();
@@ -34,11 +40,15 @@ public class FreeClimb : MonoBehaviour
 
     public void Init() {
         helper = new GameObject().transform;
+        helper.name = "climb helper";
+        a_hook.Init(this, helper);
         CheckForClimb();
     }
 
     private void Update() {
         delta = Time.deltaTime;
+        helperVisualizer.transform.position = helper.position;
+        helperVisualizer.transform.rotation = helper.rotation;
 
         Tick(delta);
     }
@@ -68,6 +78,7 @@ public class FreeClimb : MonoBehaviour
             startPos = transform.position;
             //Vector3 tp = helper.position - transform.position;
             targetPos = helper.position;
+            a_hook.CreatePositions(targetPos);
         }
         else {
             t += delta * climbSpeed;
@@ -86,9 +97,9 @@ public class FreeClimb : MonoBehaviour
         Vector3 origin = transform.position;
         float dis = positionOffset;
         Vector3 dir = moveDir;
-        Debug.DrawRay(origin, dir * dis, Color.blue);
         RaycastHit hit;
 
+        Debug.DrawRay(origin, dir * dis, Color.blue);
         if (Physics.Raycast(origin, dir, out hit, dis)) {
             return false;
         }
@@ -96,8 +107,8 @@ public class FreeClimb : MonoBehaviour
         origin += moveDir * dis;
         dir = helper.forward;
         float dis2 = inAngleDis;
+        
         Debug.DrawRay(origin, dir * dis2, Color.red);
-
         if (Physics.Raycast(origin, dir, out hit, dis)) {
             helper.position = PosWithOffset(origin, hit.point);
             helper.rotation = Quaternion.LookRotation(-hit.normal);
@@ -147,7 +158,7 @@ public class FreeClimb : MonoBehaviour
             t = 1;
             inPosition = true;
 
-            //enable ik
+            a_hook.CreatePositions(targetPos);
         }
 
         Vector3 targetPosition = Vector3.Lerp(startPos, targetPos, t);
@@ -161,4 +172,9 @@ public class FreeClimb : MonoBehaviour
         Vector3 offset = direction * offsetFromWall;
         return target + offset;
     }
+}
+
+[System.Serializable]
+public class IKSnapshot {
+    public Vector3 rh, lh, rf, lf;
 }
